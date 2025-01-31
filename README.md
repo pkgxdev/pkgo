@@ -31,6 +31,10 @@ sudo install -m 755 entrypoint.ts /usr/local/bin/pkgo
 ```sh
 $ git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui
 # ^^ clone a supported project
+
+$ cd stable-diffusion-webui
+# ^^ step into the clone
+
 $ pkgo
 # ^^ `pkgo` does the setup and executes it
 ```
