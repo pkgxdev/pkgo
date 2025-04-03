@@ -1,21 +1,13 @@
-#!/bin/sh
-//usr/bin/true && _R="$PWD"
-//bin/test $(uname) != Darwin && _W="${XDG_DATA_HOME:-$HOME/.local/share}/pkgo"
-//bin/test $(uname) = Darwin && _W="$HOME/Library/Application Support/pkgo"
-//bin/test $(basename $0) == entrypoint.ts && _R="$_R,$(dirname $0)"
-//bin/test "$TMPDIR" && _W="$_W,$TMPDIR"
-//bin/test "$TMP" && _W="$_W,$TMP"
-//bin/test "$TEMP" && _W="$_W,$TEMP"
-//usr/bin/true && exec pkgx --quiet +git deno^2 run --ext=ts --allow-run --allow-env=HOME,XDG_CACHE_HOME --allow-read="$_R,$_W" --allow-write="$_W" "$0" "$@"
+#!/usr/bin/env -S pkgx --quiet +git deno^2 run --ext=ts --allow-run --allow-env=HOME,XDG_CACHE_HOME -RW
 
-import { parse } from "jsr:@std/yaml@^1.0.5";
+import { parse } from "jsr:@std/yaml@^1.0.5/parse";
 import {
   basename as std_basename,
   dirname,
   fromFileUrl,
   join,
 } from "jsr:@std/path@^1.0.8";
-import { existsSync } from "jsr:@std/fs@1.0.10";
+import { existsSync } from "jsr:@std/fs@1.0.10/exists";
 
 interface Manifest {
   repository: string
@@ -136,12 +128,15 @@ async function main(manifest: Manifest, script: string) {
           ...Deno.args,
         ];
       }
-      case "linux":
+      case "windows": {
+        const shebang = Deno.readTextFileSync(script).match(/^#!.* (pkgx .*)$/)?.[1];
+        if (!shebang) throw new Error("Couldn't find shebang");
+        return [...shebang.split(/\s+/), script, ...Deno.args];
+      }
+      default:
         //TODO pkg firejail and implement sandbox
         //  ^^ https://github.com/netblue30/firejail
         return [script, ...Deno.args];
-      default:
-        throw new Error("Unsupported OS");
     }
   })();
 
@@ -191,22 +186,22 @@ function basename(path: string) {
 function get_data_home() {
   switch (Deno.build.os) {
     case "darwin":
-      return join(Deno.env.get("HOME") || "/Users/Shared", "Library/Application Support");
-    case "linux":
-      return Deno.env.get("XDG_DATA_HOME") || join(Deno.env.get("HOME")!, ".local/share");
+      return join(Deno.env.get("HOME")?.trim() || "/Users/Shared", "Library/Application Support");
+    case "windows":
+      return get_xdg_cache_home();
     default:
-      throw new Error("Unsupported OS");
+      return Deno.env.get("XDG_DATA_HOME")?.trim() || join(Deno.env.get("HOME")!, ".local/share");
   }
 }
 
 function get_xdg_cache_home() {
   switch (Deno.build.os) {
     case "darwin":
-      return join(Deno.env.get("HOME") || "/Users/Shared", "Library/Caches");
-    case "linux":
-      return Deno.env.get("XDG_CACHE_HOME") || join(Deno.env.get("HOME")!, ".cache");
+      return join(Deno.env.get("HOME")?.trim() || "/Users/Shared", "Library/Caches");
+    case "windows":
+      return Deno.env.get("LOCALAPPDATA")?.trim() || join(Deno.env.get("USERPROFILE")!, 'AppData/Local')
     default:
-      throw new Error("Unsupported OS");
+      return Deno.env.get("XDG_CACHE_HOME")?.trim() || join(Deno.env.get("HOME")!, ".cache");
   }
 }
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env -S pkgx --quiet +git +python~3.10 +gum bash -eo pipefail
+#!/usr/bin/env -S pkgx --quiet +git python@3.10.6
 
 # ---
 # name:
@@ -27,20 +27,42 @@
 #   - https://www.youtube.com/playlist?list=PL_pbwdIyffsmclLl0O144nQRnezKlNdx3
 # ---
 
-gum format \
-  "# Stable Diffusion WebUI" \
-  "the app will download Stable Diffusion 1.5 automatically." \
-  "this is a relatively old model." \
-  "we recommend adding newer models to \`models/Stable-diffusion\`" \
-  "* [Juggernaut XL](https://civitai.com/models/133005/juggernaut-xl) (popular SDXL model)" \
-  "* [Dreamshaper 8](https://civitai.com/models/4384/dreamshaper) (popular SD1.5 model)" \
-  "* [civitai.com](https://civitai.com) in general is a great resource"
+def pretty_print():
+  print("=" * 50)
+  print("# Stable Diffusion WebUI")
+  print("=" * 50)
+  print("The app will download Stable Diffusion 1.5 automatically.")
+  print("This is a relatively old model.")
+  print("We recommend adding newer models to `models/Stable-diffusion`:")
+  print()
+  print("  * Juggernaut XL (popular SDXL model):")
+  print("    https://civitai.com/models/133005/juggernaut-xl")
+  print("  * Dreamshaper 8 (popular SD1.5 model):")
+  print("    https://civitai.com/models/4384/dreamshaper")
+  print("  * civitai.com in general is a great resource:")
+  print("    https://civitai.com")
+  print("=" * 50)
 
-if [ $(uname) = Darwin ]; then
-  # supposedly speeds things up on Apple Silicon
-  ARGS+=(--opt-sub-quad-attention --no-half-vae)
-fi
+pretty_print()
 
-export MPLCONFIGDIR="$SRCROOT/matplotlib"
+import os
+import platform
+import subprocess
+import sys
 
-exec "$SRCROOT/webui.sh" "${ARGS[@]}" "$@"
+# Set arguments based on the operating system
+args = []
+if platform.system() == "Darwin":
+  # Supposedly speeds things up on Apple Silicon
+  args.extend(["--opt-sub-quad-attention", "--no-half-vae"])
+
+# Set the MPLCONFIGDIR environment variable
+src_root = os.getenv("SRCROOT", "")
+os.environ["MPLCONFIGDIR"] = os.path.join(src_root, "matplotlib")
+
+# Construct the command to execute
+webui_script = os.path.join(src_root, "webui.sh")
+command = [webui_script] + args + sys.argv[1:]
+
+# Execute the command
+subprocess.run(command)

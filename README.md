@@ -23,8 +23,12 @@ sudo install -m 755 entrypoint.ts /usr/local/bin/pkgo
 > ```
 
 > [!NOTE]
-> We support macOS & Linux, arm64 and x86-64. Not all platforms have been
-> tested. Bug reports welcome!
+> We support macOS, Linux and Windows. Not all platforms have been tested.
+> Bug reports welcome!
+
+> [!NOTE]
+> Installing on Windows is not documented. Downloaded `entrypoint.*` and
+> execute the `.cmd` file.
 
 ## Usage
 
@@ -71,5 +75,7 @@ See the scripts we have already written for examples.
   YAML front matter.
 - We pass all command line arguments to you, use them as you see fit and pass
   what you don’t consume through to the program you have packaged.
+- Don’t use `bash`! Since this means straight up you won’t support Windows.
+  Probably write the script in the language of the project you are supporting.
 
 [`pkgx`]: https://pkgx.sh
