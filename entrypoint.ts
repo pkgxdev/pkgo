@@ -40,6 +40,20 @@ class PackageNotFoundError extends Error {
 ////////////////////////////////////////////////////////////////////////////////
 
 try {
+  if (Deno.args.includes("--help") || Deno.args.includes("-h")) {
+    const { code } = await new Deno.Command("pkgx", {
+      args: [
+        "glow",
+        "https://raw.githubusercontent.com/pkgxdev/pkgo/refs/heads/main/README.md",
+      ],
+    }).spawn().status;
+    Deno.exit(code);
+  }
+  if (Deno.args.includes("--version") || Deno.args.includes("-v")) {
+    console.log("pkgo 0.0.0-dev");
+    Deno.exit(0);
+  }
+
   await go();
 } catch (err) {
   console.error("%cerror", 'color:red', (err as Error).message);
