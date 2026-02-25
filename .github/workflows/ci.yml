@@ -16,3 +16,4 @@ jobs:
         with:
           deno-version: v2.x
       - run: deno check ./entrypoint.ts
+      - run: deno test ./lib

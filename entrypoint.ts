@@ -8,6 +8,8 @@ import {
   join,
 } from "jsr:@std/path@^1.0.8";
 import { existsSync } from "jsr:@std/fs@1.0.10/exists";
+import { convertUrlToHttps } from "./lib/url.ts";
+import { buildSandboxProfile } from "./lib/sandbox.ts";
 
 interface Manifest {
   repository: string
@@ -81,15 +83,7 @@ async function determine_repo() {
   const { success } = await proc.status;
   if (!success) return "<failed>";  // hack to cause find_manifest to fail and populate the right error
   const url = new TextDecoder().decode((await proc.output()).stdout).trim();
-  return convert_url_to_https(url);
-}
-
-function convert_url_to_https(input: string) {
-  if (input.startsWith("git@")) {
-    return input.replace(":", "/").replace("git@", "https://").slice(0, -4);
-  } else {
-    return input;
-  }
+  return convertUrlToHttps(url);
 }
 
 async function find_manifest(repo: string, manifests: string): Promise<[Manifest, string]> {
@@ -151,26 +145,12 @@ function make_sandbox({ sandbox }: { sandbox?: string[] }, SRCROOT: string) {
   //FIXME don’t want to add ~/.pkgx
 
   const home = Deno.env.get("HOME")!;
-
-  let sandboxProfile = `
-(version 1)
-(allow default)
-(deny file-write*)
-(allow file-write* (subpath "/dev/null"))
-(allow file-write* (subpath "/var"))
-(allow file-write* (subpath "/private/var"))
-(allow file-write* (subpath "/tmp"))
-(allow file-write* (subpath "${home}/.pkgx"))
-(allow file-write* (subpath "${home}/Library/Caches"))
-(allow file-write* (subpath "${home}/.cache"))
-(allow file-write* (subpath "${SRCROOT}"))
-`;
-
-  for (let ln of sandbox ?? []) {
-    ln = ln.replace("$XDG_CACHE_HOME", get_xdg_cache_home());
-    ln = ln.replace("$HOME", home);
-    sandboxProfile += `(allow file-write* (subpath "${ln}"))\n`;
-  }
+  const sandboxProfile = buildSandboxProfile({
+    home,
+    srcRoot: SRCROOT,
+    xdgCacheHome: get_xdg_cache_home(),
+    extraPaths: sandbox ?? [],
+  });
 
   const fn = Deno.makeTempFileSync({ prefix: "pkgo", suffix: ".sb" });
   Deno.writeTextFileSync(fn, sandboxProfile.trim());
